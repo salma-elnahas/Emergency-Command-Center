@@ -1,4 +1,4 @@
-from queue import Queue
+from incident_queue import Queue
 from incident import Incident , InvalidIncidentException
 from datetime import datetime, timedelta
 import re
