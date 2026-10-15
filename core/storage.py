@@ -2,6 +2,8 @@ import csv
 import os
 
 from core.responders import RESPONDER_TYPES
+from datetime import datetime
+from core.incident import Incident, InvalidIncidentException
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -38,6 +40,38 @@ APP_TO_CSV_STATUS = {
     "in_progress": "In Progress",
     "closed": "Closed",
 }
+
+CSV_TO_APP_TYPE = {v: k for k, v in APP_TO_CSV_TYPE.items()}
+CSV_TO_APP_STATUS = {v: k for k, v in APP_TO_CSV_STATUS.items()}
+
+
+def load_incidents(path=INCIDENTS_CSV):
+    # Rebuild Incident objects from incidents.csv, keeping saved IDs, times and statuses
+    incidents = []
+    if not os.path.exists(path):
+        return incidents
+    with open(path, newline="") as file:
+        for line_no, row in enumerate(csv.DictReader(file), start=2):
+            try:
+                csv_type = (row.get("incident_type") or "").strip()
+                zone = (row.get("location_zone") or "").strip()
+                incident = Incident(
+                    type=CSV_TO_APP_TYPE[csv_type],
+                    description=f"{csv_type} incident reported in {zone}",   # not stored in the CSV
+                    time=datetime.fromisoformat(row["timestamp"].strip()),
+                    location=zone,
+                    reporter_name="Unknown caller",                          # not stored in the CSV
+                    reporter_phone=row["caller_phone"],
+                    id=row["incident_id"],
+                    status=CSV_TO_APP_STATUS[row["status"].strip()],
+                )
+                severity = (row.get("severity_level") or "").strip()
+                if severity:
+                    incident.set_severity(int(severity))   # keep the dataset's value
+                incidents.append(incident)
+            except (KeyError, ValueError, InvalidIncidentException) as error:
+                print(f"incidents.csv line {line_no} skipped: {error}")
+    return incidents
 
 
 def _ensure_data_dir():

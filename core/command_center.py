@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from core.dispatch import DispatchEngine
 from core.incident import Incident
@@ -13,37 +13,25 @@ class CommandCenter:
         self.resources = ResourceManager()
         self.dispatch = DispatchEngine()
         self.load_responders()
-        self.seed_incidents()
+        self.load_incidents()  
 
     def load_responders(self):
         for responder in storage.load_responders():
             self.resources.add_responder(responder)
 
-    def seed_incidents(self):
-        now = datetime.now()
-        samples = [
-            ("fire", "Kitchen fire spreading through a residential building", now - timedelta(minutes=10), "Zone A", "Ahmed", "01012345678"),
-            ("medical", "Person collapsed and needs urgent medical assistance", now - timedelta(minutes=30), "Zone C", "Mona", "01212345678"),
-            ("crime", "Armed robbery reported near the shopping center", now - timedelta(minutes=60), "Zone B", "Sara", "01112345678"),
-            ("accident", "Multi-car collision blocking the main road", now - timedelta(minutes=5), "Cairo", "Omar", "01512345678"),
-            ("rescue", "Worker trapped under debris at a construction site", now - timedelta(minutes=90), "Zone D", "Youssef", "01098765432"),
-        ]
-        for incident_type, description, moment, location, name, phone in samples:
-            try:
-                self.incidents.add_incident(
-                    Incident(incident_type, description, moment, location, name, phone)
-                )
-            except Exception:
-                continue
+    def load_incidents(self):
+        Incident.id_counter = 0 # restart the counter from the file's data
+        for incident in storage.load_incidents():
+            self.incidents.add_incident(incident)
 
     def add_incident(self, incident, persist=True):
         self.incidents.add_incident(incident)
         if persist:
             try:
                 storage.append_incident(incident)
-            except Exception:
-                pass
-
+            except Exception as error:
+                print(f"Could not save {incident.get_id()} to CSV: {error}")
+                
     def assign_responder(self, incident, responder, is_greedy=False):
         return self.dispatch.assign_responder(incident, responder, is_greedy=is_greedy)
 
