@@ -1,67 +1,63 @@
-
 from datetime import datetime
 import re
 
-# Create a custom exception class 
+
 class InvalidIncidentException(Exception):
     pass
 
-# Define incident class with attributes
-class Incident:
-    VALID_STATUSES = ["open", "assigned", "in progress", "closed"]
-    TYPE_SEVERITY = {
-            "natural disaster": 5,
-            "fire": 5,
-            "medical": 5,
-            "accident": 4,
-            "crime": 4,
-            "hazardous material": 4,
-            "rescue": 4,
-            "infrastructure failure": 3,
-            "public disturbance": 2,
-            "other": 1,
-            }
-   
-    # define a class variable 
-    id_counter  = 0 
 
-    # Initialize with constructor
-    def __init__(self, type, description, time, location,reporter_name, reporter_phone, status="open"):         
-       self.set_type(type)
-       self.set_description(description)
-       self.set_time(time)
-       self.set_location(location)
-       self.set_reporter_name(reporter_name)
-       self.set_reporter_phone(reporter_phone)
-       self.set_status(status)
-       # Only reached if everything above passed
-       Incident.id_counter += 1
-       self.id = f"INC{Incident.id_counter:04d}" 
-    # Setters 
+class Incident:
+    VALID_STATUSES = ["open", "assigned", "in_progress", "closed"]
+    TYPE_SEVERITY = {
+        "natural disaster": 5,
+        "fire": 5,
+        "medical": 5,
+        "accident": 4,
+        "crime": 4,
+        "hazardous material": 4,
+        "rescue": 4,
+        "infrastructure failure": 3,
+        "public disturbance": 2,
+        "other": 1,
+    }
+
+    id_counter = 0
+
+    def __init__(self, type, description, time, location, reporter_name, reporter_phone, status="open"):
+        self.set_type(type)
+        self.set_description(description)
+        self.set_time(time)
+        self.set_location(location)
+        self.set_reporter_name(reporter_name)
+        self.set_reporter_phone(reporter_phone)
+        self.set_status(status)
+        # Only reached if everything above passed
+        Incident.id_counter += 1
+        self.id = f"INC{Incident.id_counter:04d}"
+        self.assigned_responder_id = None
+
+    # Setters
 
     def set_type(self, type):
         if not isinstance(type, str):
             raise InvalidIncidentException("Invalid Type Input! Enter a text input.")
         cleaned = type.strip().lower()
-        # Checks validity using the keys of the combined dictionary
         if cleaned not in Incident.TYPE_SEVERITY:
-            raise InvalidIncidentException(f" Incident Type must be one of: {', '.join(Incident.TYPE_SEVERITY.keys())}.")
-
+            raise InvalidIncidentException(
+                f" Incident Type must be one of: {', '.join(Incident.TYPE_SEVERITY.keys())}."
+            )
         self.type = cleaned
-        # Automatically assign severity based on the type
         self.severity = Incident.TYPE_SEVERITY[cleaned]
 
     def set_description(self, description):
         if not isinstance(description, str):
             raise InvalidIncidentException("Invalid Description Input! Enter a text input.")
-        # Non-empty and length check
         cleaned = description.strip()
         if not cleaned or len(cleaned) < 5 or len(cleaned) > 250:
             raise InvalidIncidentException("Description must be between 5 and 250 characters long.")
         self.description = cleaned
 
     def set_severity(self, severity):
-        # Check if severity is an integer value and lies between 1 and 5
         if not isinstance(severity, int) or not 1 <= severity <= 5:
             raise InvalidIncidentException("Severity must be an integer from 1 to 5.")
         self.severity = severity
@@ -69,7 +65,6 @@ class Incident:
     def set_time(self, time):
         if not isinstance(time, datetime):
             raise InvalidIncidentException("Invalid Time Input! Enter a valid date and time.")
-        # Check time's validity
         if time > datetime.now():
             raise InvalidIncidentException("Invalid Time Input! Enter a Valid date.")
         self.time = time
@@ -77,7 +72,6 @@ class Incident:
     def set_location(self, location):
         if not isinstance(location, str):
             raise InvalidIncidentException("Invalid Location Input! Enter a text input.")
-        # Non-empty and length check
         cleaned = location.strip()
         if not cleaned or len(cleaned) < 3 or len(cleaned) > 50:
             raise InvalidIncidentException("Location must be between 3 and 50 characters long.")
@@ -86,7 +80,6 @@ class Incident:
     def set_reporter_name(self, reporter_name):
         if not isinstance(reporter_name, str):
             raise InvalidIncidentException("Invalid Input! Enter a text input.")
-        # Non-empty and length check
         cleaned = reporter_name.strip()
         if not cleaned or len(cleaned) < 2 or len(cleaned) > 50:
             raise InvalidIncidentException("Reporter name must be between 2 and 50 characters long.")
@@ -95,25 +88,28 @@ class Incident:
     def set_reporter_phone(self, reporter_phone):
         if not isinstance(reporter_phone, str):
             raise InvalidIncidentException("Invalid Input! Enter a text input.")
-        
-        # Remove optional spaces or dashes using regex
-        cleaned_phone = re.sub(r'[\s\-]', '', reporter_phone.strip())
-        # Phone Regex check (starts with 010, 011, 012, 015 followed by 8 digits)
-        phone_patterns = r'^01[0125]\d{8}$'
+        cleaned_phone = re.sub(r"[\s\-]", "", reporter_phone.strip())
+        phone_patterns = r"^01[0125]\d{8}$"
         if not re.match(phone_patterns, cleaned_phone):
-            raise InvalidIncidentException("Invalid phone number format! Must be a valid 11-digit mobile number (e.g., 01012345678).")
+            raise InvalidIncidentException(
+                "Invalid phone number format! Must be a valid 11-digit mobile number (e.g., 01012345678)."
+            )
         self.reporter_phone = cleaned_phone
 
     def set_status(self, status):
-        # Check status 
-        if not isinstance(status, str) or  status not in Incident.VALID_STATUSES:
-            raise InvalidIncidentException(f"Status must be one of: {', '.join(Incident.VALID_STATUSES)}.")
+        if isinstance(status, str):
+            status = status.strip().lower().replace(" ", "_")
+        if not isinstance(status, str) or status not in Incident.VALID_STATUSES:
+            raise InvalidIncidentException(
+                f"Status must be one of: {', '.join(Incident.VALID_STATUSES)}."
+            )
         self.status = status
-    
-    # Getters 
+
+    # Getters
+
     def get_id(self):
-            return self.id
-    
+        return self.id
+
     def get_type(self):
         return self.type
 
@@ -137,11 +133,9 @@ class Incident:
 
     def get_status(self):
         return self.status
-    
+
+    def is_open(self):
+        return self.status == "open"
+
     def __str__(self):
-        return (f"[{self.id}] {self.type} | severity {self.severity} | {self.location} | {self.status}")
-    
-
-                
-
-    
+        return f"[{self.id}] {self.type} | severity {self.severity} | {self.location} | {self.status}"
