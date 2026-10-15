@@ -1,0 +1,12 @@
+responder_id,responder_type,current_zone,status
+AMB-001,Ambulance,Zone A,Busy
+AMB-002,Ambulance,Zone C,Busy
+AMB-003,Ambulance,Zone D,Busy
+ENG-001,FireTruck,Zone B,Busy
+ENG-002,FireTruck,Zone A,Available
+ENG-003,FireTruck,Zone D,Available
+POL-001,Police,Zone A,Busy
+POL-002,Police,Zone B,Busy
+POL-003,Police,Zone C,Available
+RSC-001,Rescue,Zone C,Available
+AHM-100,FireTruck,ZoneB,Available

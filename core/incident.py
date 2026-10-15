@@ -1,4 +1,3 @@
-
 from datetime import datetime
 import re
 
@@ -26,7 +25,7 @@ class Incident:
     id_counter  = 0 
 
     # Initialize with constructor
-    def __init__(self, type, description, time, location,reporter_name, reporter_phone, status="open"):         
+    def __init__(self,type, description, time, location,reporter_name, reporter_phone,  id= None ,status="open"):         
        self.set_type(type)
        self.set_description(description)
        self.set_time(time)
@@ -34,11 +33,21 @@ class Incident:
        self.set_reporter_name(reporter_name)
        self.set_reporter_phone(reporter_phone)
        self.set_status(status)
-       # Only reached if everything above passed
-       Incident.id_counter += 1
-       self.id = f"INC{Incident.id_counter:04d}" 
+       if id is None:                      # new incident: generate an ID
+        Incident.id_counter += 1
+        self.id = f"INC{Incident.id_counter:04d}"
+       else:                               # loaded incident: restore its ID
+        self.set_id(id)
+      
     # Setters 
-
+    def set_id(self, id):
+        if not isinstance(id, str) or not re.match(r"^INC\d{4,}$", id.strip().upper()):
+            raise InvalidIncidentException("ID must look like INC0001.")
+        id = id.strip().upper()
+        self.id = id
+        # Keep the counter ahead of every ID that exists
+        Incident.id_counter = max(Incident.id_counter, int(id[3:]))
+        
     def set_type(self, type):
         if not isinstance(type, str):
             raise InvalidIncidentException("Invalid Type Input! Enter a text input.")
@@ -140,8 +149,3 @@ class Incident:
     
     def __str__(self):
         return (f"[{self.id}] {self.type} | severity {self.severity} | {self.location} | {self.status}")
-    
-
-                
-
-    
