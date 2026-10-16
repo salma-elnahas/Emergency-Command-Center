@@ -129,13 +129,6 @@ with tab2:
                     st.rerun()
                 except InvalidStatusTransitionError as error:
                     st.error(f"Lifecycle constraint violation: {error}")
-        with col_b3:
-            if st.button("Try invalid jump to CLOSED (error demo)"):
-                try:
-                    engine.validate_transition(inc.get_status(), "closed")
-                    st.warning("Transition allowed.")
-                except InvalidStatusTransitionError as error:
-                    st.error(f"Custom exception triggered correctly:\n{error}")
 
 with tab3:
     st.subheader("Action log & stack undo control")
