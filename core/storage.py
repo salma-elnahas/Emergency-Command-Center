@@ -50,6 +50,33 @@ def _ensure_data_dir():
     os.makedirs(DATA_DIR, exist_ok=True)
 
 
+_TIMESTAMP_FORMATS = (
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",
+    "%m/%d/%Y %H:%M:%S",
+    "%m/%d/%Y %H:%M",
+    "%m/%d/%y %H:%M",
+    "%m/%d/%Y",
+)
+
+
+def parse_timestamp(value):
+    # Accept both ISO ("2026-10-14 07:15:00") and US ("10/14/2026 7:15") styles
+    value = (value or "").strip()
+    if not value:
+        return datetime.now()
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        pass
+    for fmt in _TIMESTAMP_FORMATS:
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    return datetime.now()
+
+
 def load_incidents(path=INCIDENTS_CSV):
     # Rebuild Incident objects from incidents.csv, keeping saved IDs, times and statuses
     incidents = []
@@ -61,12 +88,8 @@ def load_incidents(path=INCIDENTS_CSV):
                 csv_type = (row.get("incident_type") or "").strip()
                 zone = (row.get("location_zone") or "").strip()
 
-                # Timestamps may be missing in the dataset; fall back to "now"
-                timestamp = (row.get("timestamp") or "").strip()
-                try:
-                    moment = datetime.fromisoformat(timestamp)
-                except ValueError:
-                    moment = datetime.now()
+                # Timestamps may be missing or use a non-ISO format; parse flexibly
+                moment = parse_timestamp(row.get("timestamp"))
 
                 # The dataset may contain loosely-formatted phones; keep a valid
                 # placeholder so a bad number never drops an otherwise good row

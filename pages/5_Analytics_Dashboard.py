@@ -89,7 +89,7 @@ class EmergencyDashboard:
         max_date = df["timestamp"].max().date() if not df["timestamp"].dropna().empty else date.today()
 
         date_range = st.sidebar.date_input(
-            "Date Range", [min_date, max_date], min_value=min_date
+            "Date Range", [min_date, max_date]
         )
 
         inc_types = st.sidebar.multiselect("Incident Type", options=df["incident_type"].dropna().unique())
