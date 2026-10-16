@@ -23,7 +23,7 @@ class Incident:
 
     id_counter = 0
 
-    def __init__(self, type, description, time, location, reporter_name, reporter_phone, status="open"):
+    def __init__(self, type, description, time, location, reporter_name, reporter_phone, status="open", id=None):
         self.set_type(type)
         self.set_description(description)
         self.set_time(time)
@@ -31,12 +31,27 @@ class Incident:
         self.set_reporter_name(reporter_name)
         self.set_reporter_phone(reporter_phone)
         self.set_status(status)
-        # Only reached if everything above passed
-        Incident.id_counter += 1
-        self.id = f"INC{Incident.id_counter:04d}"
         self.assigned_responder_id = None
+        if id is None:
+            # new incident: generate a fresh ID
+            Incident.id_counter += 1
+            self.id = f"INC{Incident.id_counter:04d}"
+        else:
+            # incident loaded from storage: restore its saved ID
+            self.set_id(id)
 
     # Setters
+
+    def set_id(self, id):
+        if not isinstance(id, str):
+            raise InvalidIncidentException("ID must look like INC0001.")
+        cleaned = id.strip().upper()
+        match = re.match(r"^INC-?(\d{4,})$", cleaned)
+        if not match:
+            raise InvalidIncidentException("ID must look like INC0001.")
+        self.id = cleaned
+        # Keep the counter ahead of every ID that already exists
+        Incident.id_counter = max(Incident.id_counter, int(match.group(1)))
 
     def set_type(self, type):
         if not isinstance(type, str):
