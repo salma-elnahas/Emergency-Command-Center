@@ -72,63 +72,53 @@ with tab1:
                 except DispatchError as error:
                     st.error(f"Dispatch error: {error}")
 
-        with col_a2:
-            st.markdown("##### Manual dispatch")
-            available_resps = cc.available_responders()
-            if not available_resps:
-                st.warning("No responders currently available for manual assignment.")
-            else:
-                manual_resp_id = st.selectbox(
-                    "Choose available responder:",
-                    options=[r.responder_id for r in available_resps],
-                    format_func=lambda x: (
-                        f"Responder #{x} - {responders[x].type} @ {responders[x].location}"
-                    ),
-                )
-                if st.button("Assign selected responder manually"):
-                    try:
-                        engine.assign_responder(
-                            selected_incident, responders[manual_resp_id], is_greedy=False
-                        )
-                        st.success(
-                            f"Manually assigned responder #{manual_resp_id} "
-                            f"to incident #{selected_inc_id}."
-                        )
-                        st.rerun()
-                    except DispatchError as error:
-                        st.error(f"Dispatch error: {error}")
-
 with tab2:
     st.subheader("Lifecycle status tracking (open -> assigned -> in_progress -> closed)")
     if not incidents:
         st.info("No incidents found.")
     else:
-        inc_id = st.selectbox("Select incident to update:", options=list(incidents.keys()))
-        inc = incidents[inc_id]
-        st.info(
-            f"Current status of incident #{inc_id}: **{inc.get_status().upper()}** | "
-            f"Assigned unit: **{inc.assigned_responder_id}**"
+        status_filter = st.selectbox(
+            "Filter incidents by status:",
+            options=["All", "open", "assigned", "in_progress", "closed"],
+            format_func=lambda value: (
+                "All statuses" if value == "All" else value.replace("_", " ").upper()
+            ),
         )
+        filtered_ids = [
+            incident_id
+            for incident_id, incident in incidents.items()
+            if status_filter == "All" or incident.get_status() == status_filter
+        ]
 
-        assigned_resp = responders.get(inc.assigned_responder_id) if inc.assigned_responder_id else None
+        if not filtered_ids:
+            st.info(f"No incidents with status '{status_filter}'.")
+        else:
+            inc_id = st.selectbox("Select incident to update:", options=filtered_ids)
+            inc = incidents[inc_id]
+            st.info(
+                f"Current status of incident #{inc_id}: **{inc.get_status().upper()}** | "
+                f"Assigned unit: **{inc.assigned_responder_id}**"
+            )
 
-        col_b1, col_b2, col_b3 = st.columns(3)
-        with col_b1:
-            if st.button("Mark as IN_PROGRESS"):
-                try:
-                    engine.update_incident_status(inc, "in_progress", assigned_resp)
-                    st.success(f"Incident #{inc_id} marked as in progress.")
-                    st.rerun()
-                except InvalidStatusTransitionError as error:
-                    st.error(f"Lifecycle constraint violation: {error}")
-        with col_b2:
-            if st.button("Mark as CLOSED (resolve)"):
-                try:
-                    cc.update_status(inc, "closed", assigned_resp)
-                    st.success(f"Incident #{inc_id} closed. Responder released.")
-                    st.rerun()
-                except InvalidStatusTransitionError as error:
-                    st.error(f"Lifecycle constraint violation: {error}")
+            assigned_resp = responders.get(inc.assigned_responder_id) if inc.assigned_responder_id else None
+
+            col_b1, col_b2, col_b3 = st.columns(3)
+            with col_b1:
+                if st.button("Mark as IN_PROGRESS"):
+                    try:
+                        engine.update_incident_status(inc, "in_progress", assigned_resp)
+                        st.success(f"Incident #{inc_id} marked as in progress.")
+                        st.rerun()
+                    except InvalidStatusTransitionError as error:
+                        st.error(f"Lifecycle constraint violation: {error}")
+            with col_b2:
+                if st.button("Mark as CLOSED (resolve)"):
+                    try:
+                        cc.update_status(inc, "closed", assigned_resp)
+                        st.success(f"Incident #{inc_id} closed. Responder released.")
+                        st.rerun()
+                    except InvalidStatusTransitionError as error:
+                        st.error(f"Lifecycle constraint violation: {error}")
 
 with tab3:
     st.subheader("Action log & stack undo control")

@@ -151,6 +151,12 @@ class DispatchEngine:
 
         return best_responder, round(min_distance, 2)
 
+    def get_compatible_responders(self, incident, responders_list):
+        available_responders = [r for r in responders_list if getattr(r, "available", False)]
+        req_types = self.compatible_types(incident.get_type())
+        compatible = [r for r in available_responders if getattr(r, "type", None) in req_types]
+        return compatible
+
     def validate_transition(self, current_status, target_status):
         current_status = str(current_status).strip().lower().replace(" ", "_")
         target_status = str(target_status).strip().lower().replace(" ", "_")
