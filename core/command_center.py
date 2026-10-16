@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from core.dispatch import DispatchEngine
 from core.incident import Incident
 from core.incident_manager import IncidentManager
@@ -13,14 +11,15 @@ class CommandCenter:
         self.resources = ResourceManager()
         self.dispatch = DispatchEngine()
         self.load_responders()
-        self.load_incidents()  
+        self.load_incidents()
 
     def load_responders(self):
         for responder in storage.load_responders():
             self.resources.add_responder(responder)
 
     def load_incidents(self):
-        Incident.id_counter = 0 # restart the counter from the file's data
+        # Everything comes from data/incidents.csv so the app has a single source of truth
+        Incident.id_counter = 0  # resent counter; set_id bumps it past the loaded IDs
         for incident in storage.load_incidents():
             self.incidents.add_incident(incident)
 

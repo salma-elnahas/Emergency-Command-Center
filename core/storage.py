@@ -1,8 +1,9 @@
 import csv
 import os
+import re
+from datetime import datetime
 
 from core.responders import RESPONDER_TYPES
-from datetime import datetime
 from core.incident import Incident, InvalidIncidentException
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,8 +42,12 @@ APP_TO_CSV_STATUS = {
     "closed": "Closed",
 }
 
-CSV_TO_APP_TYPE = {v: k for k, v in APP_TO_CSV_TYPE.items()}
-CSV_TO_APP_STATUS = {v: k for k, v in APP_TO_CSV_STATUS.items()}
+CSV_TO_APP_TYPE = {value: key for key, value in APP_TO_CSV_TYPE.items()}
+CSV_TO_APP_STATUS = {value: key for key, value in APP_TO_CSV_STATUS.items()}
+
+
+def _ensure_data_dir():
+    os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_incidents(path=INCIDENTS_CSV):
@@ -50,32 +55,48 @@ def load_incidents(path=INCIDENTS_CSV):
     incidents = []
     if not os.path.exists(path):
         return incidents
-    with open(path, newline="") as file:
-        for line_no, row in enumerate(csv.DictReader(file), start=2):
+    with open(path, newline="", encoding="utf-8") as handle:
+        for line_no, row in enumerate(csv.DictReader(handle), start=2):
             try:
                 csv_type = (row.get("incident_type") or "").strip()
                 zone = (row.get("location_zone") or "").strip()
+
+                # Timestamps may be missing in the dataset; fall back to "now"
+                timestamp = (row.get("timestamp") or "").strip()
+                try:
+                    moment = datetime.fromisoformat(timestamp)
+                except ValueError:
+                    moment = datetime.now()
+
+                # The dataset may contain loosely-formatted phones; keep a valid
+                # placeholder so a bad number never drops an otherwise good row
+                phone = (row.get("caller_phone") or "").strip()
+                if not re.match(r"^01[0125]\d{8}$", re.sub(r"[\s\-]", "", phone)):
+                    phone = "01000000000"
+
                 incident = Incident(
                     type=CSV_TO_APP_TYPE[csv_type],
-                    description=f"{csv_type} incident reported in {zone}",   # not stored in the CSV
-                    time=datetime.fromisoformat(row["timestamp"].strip()),
+                    description=f"{csv_type} incident reported in {zone}",  # not stored in the CSV
+                    time=moment,
                     location=zone,
-                    reporter_name="Unknown caller",                          # not stored in the CSV
-                    reporter_phone=row["caller_phone"],
-                    id=row["incident_id"],
-                    status=CSV_TO_APP_STATUS[row["status"].strip()],
+                    reporter_name="Unknown caller",  # not stored in the CSV
+                    reporter_phone=phone,
+                    status=CSV_TO_APP_STATUS[(row.get("status") or "").strip()],
+                    id=row.get("incident_id"),
                 )
                 severity = (row.get("severity_level") or "").strip()
                 if severity:
-                    incident.set_severity(int(severity))   # keep the dataset's value
+                    incident.set_severity(int(severity))  # keep the dataset's value
+                resolution = (row.get("resolution_time_mins") or "").strip()
+                if resolution:
+                    try:
+                        incident.resolution_time_mins = float(resolution)
+                    except ValueError:
+                        pass
                 incidents.append(incident)
             except (KeyError, ValueError, InvalidIncidentException) as error:
                 print(f"incidents.csv line {line_no} skipped: {error}")
     return incidents
-
-
-def _ensure_data_dir():
-    os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_responders(path=RESPONDERS_CSV):

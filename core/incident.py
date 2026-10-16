@@ -9,45 +9,51 @@ class InvalidIncidentException(Exception):
 class Incident:
     VALID_STATUSES = ["open", "assigned", "in progress", "closed"]
     TYPE_SEVERITY = {
-            "natural disaster": 5,
-            "fire": 5,
-            "medical": 5,
-            "accident": 4,
-            "crime": 4,
-            "hazardous material": 4,
-            "rescue": 4,
-            "infrastructure failure": 3,
-            "public disturbance": 2,
-            "other": 1,
-            }
-   
-    # define a class variable 
-    id_counter  = 0 
+        "natural disaster": 5,
+        "fire": 5,
+        "medical": 5,
+        "accident": 4,
+        "crime": 4,
+        "hazardous material": 4,
+        "rescue": 4,
+        "infrastructure failure": 3,
+        "public disturbance": 2,
+        "other": 1,
+    }
 
-    # Initialize with constructor
-    def __init__(self,type, description, time, location,reporter_name, reporter_phone,  id= None ,status="open"):         
-       self.set_type(type)
-       self.set_description(description)
-       self.set_time(time)
-       self.set_location(location)
-       self.set_reporter_name(reporter_name)
-       self.set_reporter_phone(reporter_phone)
-       self.set_status(status)
-       if id is None:                      # new incident: generate an ID
-        Incident.id_counter += 1
-        self.id = f"INC{Incident.id_counter:04d}"
-       else:                               # loaded incident: restore its ID
-        self.set_id(id)
-      
-    # Setters 
+    id_counter = 0
+
+    def __init__(self, type, description, time, location, reporter_name, reporter_phone, status="open", id=None):
+        self.set_type(type)
+        self.set_description(description)
+        self.set_time(time)
+        self.set_location(location)
+        self.set_reporter_name(reporter_name)
+        self.set_reporter_phone(reporter_phone)
+        self.set_status(status)
+        self.assigned_responder_id = None
+        self.resolution_time_mins = None
+        if id is None:
+            # new incident: generate a fresh ID
+            Incident.id_counter += 1
+            self.id = f"INC{Incident.id_counter:04d}"
+        else:
+            # incident loaded from storage: restore its saved ID
+            self.set_id(id)
+
+    # Setters
+
     def set_id(self, id):
-        if not isinstance(id, str) or not re.match(r"^INC\d{4,}$", id.strip().upper()):
+        if not isinstance(id, str):
             raise InvalidIncidentException("ID must look like INC0001.")
-        id = id.strip().upper()
-        self.id = id
-        # Keep the counter ahead of every ID that exists
-        Incident.id_counter = max(Incident.id_counter, int(id[3:]))
-        
+        cleaned = id.strip().upper()
+        match = re.match(r"^INC-?(\d{4,})$", cleaned)
+        if not match:
+            raise InvalidIncidentException("ID must look like INC0001.")
+        self.id = cleaned
+        # Keep the counter ahead of every ID that already exists
+        Incident.id_counter = max(Incident.id_counter, int(match.group(1)))
+
     def set_type(self, type):
         if not isinstance(type, str):
             raise InvalidIncidentException("Invalid Type Input! Enter a text input.")

@@ -88,9 +88,6 @@ if responders:
             storage.save_responders(manager.all_responders())
             st.success(f"{selected_id} set to {new_status}.")
             st.rerun()
-    with col_b:
-        st.write("Hash lookup")
-        st.code(f"find_by_id({selected_id}) -> {manager.find_by_id(selected_id)!r}", language="text")
     with col_c:
         if st.button("Remove responder"):
             manager.remove_responder(selected_id)
