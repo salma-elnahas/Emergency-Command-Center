@@ -7,7 +7,7 @@ class InvalidIncidentException(Exception):
 
 # Define incident class with attributes
 class Incident:
-    VALID_STATUSES = ["open", "assigned", "in progress", "closed"]
+    VALID_STATUSES = ["open", "assigned", "in_progress", "closed"]
     TYPE_SEVERITY = {
             "natural disaster": 5,
             "fire": 5,
@@ -33,6 +33,7 @@ class Incident:
        self.set_reporter_name(reporter_name)
        self.set_reporter_phone(reporter_phone)
        self.set_status(status)
+       self.assigned_responder_id = None
        if id is None:                      # new incident: generate an ID
         Incident.id_counter += 1
         self.id = f"INC{Incident.id_counter:04d}"
@@ -114,10 +115,13 @@ class Incident:
         self.reporter_phone = cleaned_phone
 
     def set_status(self, status):
-        # Check status 
-        if not isinstance(status, str) or  status not in Incident.VALID_STATUSES:
+        # Normalize so both "in progress" and "in_progress" are accepted
+        if not isinstance(status, str):
             raise InvalidIncidentException(f"Status must be one of: {', '.join(Incident.VALID_STATUSES)}.")
-        self.status = status
+        normalized = status.strip().lower().replace(" ", "_")
+        if normalized not in Incident.VALID_STATUSES:
+            raise InvalidIncidentException(f"Status must be one of: {', '.join(Incident.VALID_STATUSES)}.")
+        self.status = normalized
     
     # Getters 
     def get_id(self):

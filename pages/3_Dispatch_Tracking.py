@@ -105,12 +105,13 @@ with tab2:
     else:
         inc_id = st.selectbox("Select incident to update:", options=list(incidents.keys()))
         inc = incidents[inc_id]
+        assigned_id = getattr(inc, "assigned_responder_id", None)
         st.info(
             f"Current status of incident #{inc_id}: **{inc.get_status().upper()}** | "
-            f"Assigned unit: **{inc.assigned_responder_id}**"
+            f"Assigned unit: **{assigned_id}**"
         )
 
-        assigned_resp = responders.get(inc.assigned_responder_id) if inc.assigned_responder_id else None
+        assigned_resp = responders.get(assigned_id) if assigned_id else None
 
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
@@ -129,13 +130,6 @@ with tab2:
                     st.rerun()
                 except InvalidStatusTransitionError as error:
                     st.error(f"Lifecycle constraint violation: {error}")
-        with col_b3:
-            if st.button("Try invalid jump to CLOSED (error demo)"):
-                try:
-                    engine.validate_transition(inc.get_status(), "closed")
-                    st.warning("Transition allowed.")
-                except InvalidStatusTransitionError as error:
-                    st.error(f"Custom exception triggered correctly:\n{error}")
 
 with tab3:
     st.subheader("Action log & stack undo control")

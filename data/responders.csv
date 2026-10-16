@@ -9,4 +9,4 @@ POL-001,Police,Zone A,Busy
 POL-002,Police,Zone B,Busy
 POL-003,Police,Zone C,Available
 RSC-001,Rescue,Zone C,Available
-AHM-100,FireTruck,ZoneB,Available
+AHM-100,FireTruck,Zone B,Available

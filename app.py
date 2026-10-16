@@ -36,18 +36,6 @@ res_col1.metric("Available responders", available)
 res_col2.metric("Total responders", total_resources)
 
 st.markdown("---")
-st.subheader("Modules")
-st.markdown(
-    """
-    - **Incident Intake** - validate and register new incidents into the live queue.
-    - **Priority Board** - rank open incidents with a randomized quick sort.
-    - **Dispatch & Tracking** - greedy responder assignment, status lifecycle and undo.
-    - **Resource Management** - manage responders with a custom hash table.
-    - **Analytics Dashboard** - historical KPIs, charts and a live zone map.
-    """
-)
-
-st.markdown("---")
 st.subheader("Recent incidents")
 recent = cc.incidents.all_incidents()[-5:]
 if recent:
