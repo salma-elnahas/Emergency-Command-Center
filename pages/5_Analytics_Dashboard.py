@@ -12,21 +12,60 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 st.set_page_config(page_title="Analytics Dashboard", page_icon="📈", layout="wide")
 
-from core.storage import INCIDENTS_CSV, RESPONDERS_CSV
+from core.command_center import get_command_center
+from core.storage import APP_TO_CSV_STATUS
 
 
 class EmergencyDashboard:
-    @staticmethod
-    @st.cache_data
-    def load_data():
-        try:
-            incidents = pd.read_csv(INCIDENTS_CSV)
-            responders = pd.read_csv(RESPONDERS_CSV)
-        except FileNotFoundError:
-            st.error(
-                "Error: 'incidents.csv' or 'responders.csv' not found in the data directory."
-            )
-            return pd.DataFrame(), pd.DataFrame()
+    INCIDENT_COLUMNS = [
+        "incident_id",
+        "caller_phone",
+        "incident_type",
+        "severity_level",
+        "location_zone",
+        "timestamp",
+        "status",
+        "resolution_time_mins",
+    ]
+    RESPONDER_COLUMNS = ["responder_id", "responder_type", "current_zone", "status"]
+
+    def load_data(self):
+        # Use the same shared CommandCenter as every other page so the whole
+        # app reads from data/incidents.csv and data/responders.csv consistently.
+        cc = get_command_center()
+
+        incidents = pd.DataFrame(
+            [
+                {
+                    "incident_id": incident.get_id(),
+                    "caller_phone": incident.get_reporter_phone(),
+                    "incident_type": incident.get_type(),
+                    "severity_level": incident.get_severity(),
+                    "location_zone": incident.get_location(),
+                    "timestamp": incident.get_time(),
+                    "status": APP_TO_CSV_STATUS.get(incident.get_status(), incident.get_status()),
+                    "resolution_time_mins": getattr(incident, "resolution_time_mins", None),
+                }
+                for incident in cc.incidents.all_incidents()
+            ],
+            columns=self.INCIDENT_COLUMNS,
+        )
+        responders = pd.DataFrame(
+            [
+                {
+                    "responder_id": responder.responder_id,
+                    "responder_type": responder.responder_type,
+                    "current_zone": responder.location,
+                    "status": responder.get_status(),
+                }
+                for responder in cc.resources.all_responders()
+            ],
+            columns=self.RESPONDER_COLUMNS,
+        )
+
+        if incidents.empty or responders.empty:
+            st.info("No data available in the data directory yet.")
+            return incidents, responders
 
         incidents["timestamp"] = pd.to_datetime(incidents["timestamp"], errors="coerce")
         incidents["resolution_time_mins"] = pd.to_numeric(

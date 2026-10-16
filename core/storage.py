@@ -87,6 +87,12 @@ def load_incidents(path=INCIDENTS_CSV):
                 severity = (row.get("severity_level") or "").strip()
                 if severity:
                     incident.set_severity(int(severity))  # keep the dataset's value
+                resolution = (row.get("resolution_time_mins") or "").strip()
+                if resolution:
+                    try:
+                        incident.resolution_time_mins = float(resolution)
+                    except ValueError:
+                        pass
                 incidents.append(incident)
             except (KeyError, ValueError, InvalidIncidentException) as error:
                 print(f"incidents.csv line {line_no} skipped: {error}")

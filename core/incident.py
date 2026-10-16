@@ -32,6 +32,7 @@ class Incident:
         self.set_reporter_phone(reporter_phone)
         self.set_status(status)
         self.assigned_responder_id = None
+        self.resolution_time_mins = None
         if id is None:
             # new incident: generate a fresh ID
             Incident.id_counter += 1
