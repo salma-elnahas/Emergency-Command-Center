@@ -20,7 +20,7 @@ sort_by = st.sidebar.selectbox(
     "Sort incidents by", ["priority", "severity", "timestamp"]
 )
 
-incidents = [inc for inc in cc.incidents.all_incidents() if inc.is_open()]
+incidents = [inc for inc in cc.incidents.all_incidents() if inc.get_status() == "open"]
 if len(incidents) == 0:
     st.markdown("No open incidents waiting for assignment.")
     st.stop()

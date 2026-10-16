@@ -28,9 +28,9 @@ class CommandCenter:
         if persist:
             try:
                 storage.append_incident(incident)
-            except Exception:
-                pass
-
+            except Exception as error:
+                print(f"Could not save {incident.get_id()} to CSV: {error}")
+                
     def assign_responder(self, incident, responder, is_greedy=False):
         return self.dispatch.assign_responder(incident, responder, is_greedy=is_greedy)
 
